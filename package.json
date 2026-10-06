@@ -1,0 +1,34 @@
+{
+  "name": "hexenbane-playtest",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Hexenbane private playtest: application website, Supabase backend and Discord server setup.",
+  "type": "module",
+  "workspaces": [
+    "site",
+    "discord"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run dev -w site",
+    "build": "npm run agreement:check && npm run build -w site",
+    "preview": "npm run preview -w site",
+    "typecheck": "npm run typecheck -w site && npm run typecheck -w discord && tsc -p tsconfig.tests.json",
+    "test": "vitest run",
+    "agreement:sync": "node scripts/agreement.mjs sync",
+    "agreement:check": "node scripts/agreement.mjs check",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "discord": "npm run start -w discord --",
+    "function:check": "deno check --config supabase/functions/submit-playtest-application/deno.json supabase/functions/submit-playtest-application/index.ts",
+    "test:e2e": "deno test --allow-env --allow-net --config supabase/functions/submit-playtest-application/deno.json supabase/tests/e2e.test.ts",
+    "verify": "npm run agreement:check && npm run typecheck && npm test && npm run build && npm run check:secrets"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "supabase": "^2.119.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

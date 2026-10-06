@@ -1,0 +1,9 @@
+{
+  "fmt": {
+    "lineWidth": 120,
+    "exclude": ["_shared/agreement.generated.ts"]
+  },
+  "lint": {
+    "exclude": ["_shared/agreement.generated.ts"]
+  }
+}

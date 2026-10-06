@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["tests", "vitest.config.ts", "supabase/functions/_shared/application.ts", "supabase/functions/_shared/discord.ts", "supabase/functions/_shared/handler.ts", "supabase/functions/_shared/cors.ts", "supabase/functions/_shared/ids.ts", "supabase/functions/_shared/captcha.ts"]
+}

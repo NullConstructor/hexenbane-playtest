@@ -1,0 +1,32 @@
+/*
+ * Fonts. Self-hosted from npm (@fontsource), so the site makes no third-party font requests.
+ * All three are under the SIL Open Font License.
+ *
+ *   Jacquard 24   pixel blackletter, stands in for the game's Kingdom font (titles, wordmark)
+ *   Pixelify Sans pixel sans for labels, buttons and small caps
+ *   Crimson Pro   book serif for body text, stands in for Eternity-Regular
+ *
+ * To use the game's own fonts once their licence allows web use:
+ *   1. copy the .woff2 files to site/src/assets/fonts/
+ *   2. uncomment the @font-face rules below
+ *   3. change --font-display / --font-body in tokens.css to "Kingdom" / "Eternity"
+ */
+@import "@fontsource/jacquard-24/400.css";
+@import "@fontsource/pixelify-sans/400.css";
+@import "@fontsource/pixelify-sans/600.css";
+@import "@fontsource/crimson-pro/400.css";
+@import "@fontsource/crimson-pro/400-italic.css";
+@import "@fontsource/crimson-pro/600.css";
+
+/*
+@font-face {
+  font-family: "Kingdom";
+  src: url("../assets/fonts/Kingdom.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Eternity";
+  src: url("../assets/fonts/Eternity-Regular.woff2") format("woff2");
+  font-display: swap;
+}
+*/
