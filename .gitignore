@@ -1,0 +1,25 @@
+# Dependencies and builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets: never commit these. Every real value lives in a .env file that git ignores,
+# in Supabase secrets, or in GitHub repository variables.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log

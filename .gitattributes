@@ -1,0 +1,6 @@
+# Keep line endings consistent across Windows and Linux (the agreement hash depends on its text).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary
