@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{TITLE}}</title>
+    <meta name="description" content="{{DESCRIPTION}}" />
+    <meta name="theme-color" content="#07060c" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{TITLE}}" />
+    <meta property="og:description" content="{{DESCRIPTION}}" />
+    <meta property="og:image" content="{{SOCIAL_IMAGE}}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="{{BASE}}favicon.svg" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="atmosphere" aria-hidden="true">
+      <div class="atmosphere__fog atmosphere__fog--a"></div>
+      <div class="atmosphere__fog atmosphere__fog--b"></div>
+      <div class="atmosphere__grain"></div>
+    </div>
+
+    <header class="topbar" data-topbar>
+      <nav class="topbar__inner" aria-label="Main">
+        <a class="topbar__mark" href="#top">HEXENBANE</a>
+        <ul class="topbar__links" role="list">
+          <li><a href="#about">The game</a></li>
+          <li><a href="#playtest">Playtest</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#faq">Questions</a></li>
+        </ul>
+        <a class="btn btn--small btn--primary topbar__cta" href="#apply">Apply</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero__art" style="--hero-art: url('{{HERO_ART}}')" aria-hidden="true"></div>
+        <div class="hero__inner">
+          <p class="hero__eyebrow">{{HERO_EYEBROW}}</p>
+          <div id="hero-title">{{HERO_TITLE}}</div>
+          <p class="hero__tagline">{{HERO_TAGLINE}}</p>
+          <div class="hero__actions">
+            <a class="btn btn--primary btn--large" href="#apply">Request playtest access</a>
+            <a class="btn btn--ghost btn--large" href="{{DISCORD_URL}}" data-discord-link rel="noopener noreferrer" target="_blank">{{DISCORD_ICON}}<span>Join the Discord</span></a>
+          </div>
+          <p class="hero__status"><span class="hero__pulse" aria-hidden="true"></span>{{HERO_STATUS}}</p>
+        </div>
+        <a class="hero__scroll" href="#about" aria-label="Read more about Hexenbane"><span aria-hidden="true"></span></a>
+      </section>
+
+      <div class="divider" aria-hidden="true">{{SIGIL}}</div>
+
+      <section class="section about" id="about" aria-labelledby="about-title">
+        <p class="section__kicker">The game</p>
+        {{ABOUT}}
+      </section>
+
+      <div class="divider" aria-hidden="true">{{SIGIL}}</div>
+
+      <section class="section playtest" id="playtest" aria-labelledby="playtest-title">
+        <p class="section__kicker">Before you apply</p>
+        {{PLAYTEST}}
+      </section>
+
+      <section class="section section--wide gallery-section" id="gallery" aria-labelledby="gallery-title">
+        <p class="section__kicker">Screenshots</p>
+        {{GALLERY}}
+      </section>
+
+      <section class="section testers" id="testers" aria-labelledby="testers-title">
+        <p class="section__kicker">Your part</p>
+        {{TESTERS}}
+      </section>
+
+      <div class="divider" aria-hidden="true">{{SIGIL}}</div>
+
+      <section class="section apply" id="apply" aria-labelledby="apply-title">
+        <p class="section__kicker">Application</p>
+        <h2 class="section__title" id="apply-title">{{APPLY_HEADING}}</h2>
+        <p class="section__lede">{{APPLY_INTRO}}</p>
+
+        <noscript>
+          <p class="notice notice--error">The application form needs JavaScript. Please enable it, or ask about the playtest on our Discord server.</p>
+        </noscript>
+
+        <div class="apply__panel" data-apply-panel>
+          <form class="form" id="application-form" novalidate data-form>
+            <div class="form__summary" id="form-summary" tabindex="-1" role="alert" hidden data-summary>
+              <h3>There is a problem with your application</h3>
+              <ul data-summary-list></ul>
+            </div>
+
+            <!-- Honeypot: hidden from people and assistive tech. Bots that fill it are rejected. -->
+            <div class="form__trap" aria-hidden="true">
+              <label for="website">Leave this field empty</label>
+              <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <fieldset class="form__group">
+              <legend><span class="form__step">1</span> About you</legend>
+              <div class="field" data-field="preferredName">
+                <label for="preferredName">Display name <span class="field__req">required</span></label>
+                <p class="field__hint" id="preferredName-hint">What should we call you?</p>
+                <input id="preferredName" name="preferredName" type="text" autocomplete="nickname" required maxlength="60" aria-describedby="preferredName-hint preferredName-error" />
+                <p class="field__error" id="preferredName-error" data-error></p>
+              </div>
+              <div class="field" data-field="discordUsername">
+                <label for="discordUsername">Discord username <span class="field__req">required</span></label>
+                <p class="field__hint" id="discordUsername-hint">Your username, not your display name. In Discord, click your avatar at the bottom left; it's the lower-case name under your display name.</p>
+                <input id="discordUsername" name="discordUsername" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="40" aria-describedby="discordUsername-hint discordUsername-error" />
+                <p class="field__error" id="discordUsername-error" data-error></p>
+              </div>
+              <div class="field" data-field="email">
+                <label for="email">Backup email <span class="field__opt">optional</span></label>
+                <p class="field__hint" id="email-hint">Only used if we can't reach you on Discord.</p>
+                <input id="email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="email-hint email-error" />
+                <p class="field__error" id="email-error" data-error></p>
+              </div>
+            </fieldset>
+
+            <fieldset class="form__group">
+              <legend><span class="form__step">2</span> Your interest</legend>
+              <div class="field" data-field="interestReason">
+                <label for="interestReason">What interests you about Hexenbane? <span class="field__req">required</span></label>
+                <textarea id="interestReason" name="interestReason" rows="4" required maxlength="1500" aria-describedby="interestReason-count interestReason-error"></textarea>
+                <p class="field__count" id="interestReason-count" data-count></p>
+                <p class="field__error" id="interestReason-error" data-error></p>
+              </div>
+              <div class="field" data-field="similarGames">
+                <label for="similarGames">What roguelikes, deckbuilders or similar games have you played? <span class="field__req">required</span></label>
+                <textarea id="similarGames" name="similarGames" rows="3" required maxlength="1000" aria-describedby="similarGames-count similarGames-error"></textarea>
+                <p class="field__count" id="similarGames-count" data-count></p>
+                <p class="field__error" id="similarGames-error" data-error></p>
+              </div>
+              <div class="field" data-field="testingExperience">
+                <label for="testingExperience">Your gaming and playtesting experience <span class="field__req">required</span></label>
+                <p class="field__hint" id="testingExperience-hint">How much you play, and any testing you've done before. None is a fine answer.</p>
+                <textarea id="testingExperience" name="testingExperience" rows="3" required maxlength="1500" aria-describedby="testingExperience-hint testingExperience-count testingExperience-error"></textarea>
+                <p class="field__count" id="testingExperience-count" data-count></p>
+                <p class="field__error" id="testingExperience-error" data-error></p>
+              </div>
+            </fieldset>
+
+            <fieldset class="form__group">
+              <legend><span class="form__step">3</span> Your machine</legend>
+              <p class="form__group-hint">On Windows: Settings → System → About, and Task Manager → Performance for the graphics card.</p>
+              <div class="form__grid">
+                <div class="field" data-field="cpu">
+                  <label for="cpu">CPU <span class="field__req">required</span></label>
+                  <input id="cpu" name="cpu" type="text" autocomplete="off" required maxlength="120" placeholder="e.g. AMD Ryzen 5 5600" aria-describedby="cpu-error" />
+                  <p class="field__error" id="cpu-error" data-error></p>
+                </div>
+                <div class="field" data-field="gpu">
+                  <label for="gpu">GPU <span class="field__req">required</span></label>
+                  <input id="gpu" name="gpu" type="text" autocomplete="off" required maxlength="120" placeholder="e.g. NVIDIA RTX 3060" aria-describedby="gpu-error" />
+                  <p class="field__error" id="gpu-error" data-error></p>
+                </div>
+                <div class="field" data-field="ram">
+                  <label for="ram">RAM <span class="field__req">required</span></label>
+                  <input id="ram" name="ram" type="text" autocomplete="off" required maxlength="40" list="ram-options" placeholder="e.g. 16 GB" aria-describedby="ram-error" />
+                  <datalist id="ram-options"><option value="8 GB"></option><option value="16 GB"></option><option value="32 GB"></option><option value="64 GB"></option></datalist>
+                  <p class="field__error" id="ram-error" data-error></p>
+                </div>
+                <div class="field" data-field="operatingSystem">
+                  <label for="operatingSystem">Operating system <span class="field__req">required</span></label>
+                  <input id="operatingSystem" name="operatingSystem" type="text" autocomplete="off" required maxlength="80" list="os-options" placeholder="e.g. Windows 11" aria-describedby="operatingSystem-error" />
+                  <datalist id="os-options"><option value="Windows 11"></option><option value="Windows 10"></option><option value="macOS"></option><option value="Linux"></option><option value="SteamOS (Steam Deck)"></option></datalist>
+                  <p class="field__error" id="operatingSystem-error" data-error></p>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="form__group">
+              <legend><span class="form__step">4</span> Anything else</legend>
+              <div class="field" data-field="additionalNotes">
+                <label for="additionalNotes">Additional notes <span class="field__opt">optional</span></label>
+                <textarea id="additionalNotes" name="additionalNotes" rows="3" maxlength="1500" aria-describedby="additionalNotes-count additionalNotes-error"></textarea>
+                <p class="field__count" id="additionalNotes-count" data-count></p>
+                <p class="field__error" id="additionalNotes-error" data-error></p>
+              </div>
+            </fieldset>
+
+            <fieldset class="form__group form__group--discord">
+              <legend><span class="form__step">5</span> The Hexenbane Discord</legend>
+              <p class="form__group-hint" id="joinedDiscord-hint">{{DISCORD_NOTE}}</p>
+              <a class="btn btn--ghost" href="{{DISCORD_URL}}" data-discord-link rel="noopener noreferrer" target="_blank">{{DISCORD_ICON}}<span>Join Hexenbane Discord</span></a>
+              <div class="check" data-field="joinedDiscord">
+                <input id="joinedDiscord" name="joinedDiscord" type="checkbox" required aria-describedby="joinedDiscord-hint joinedDiscord-error" />
+                <label for="joinedDiscord">I have joined the Hexenbane Discord server.</label>
+              </div>
+              <p class="field__error" id="joinedDiscord-error" data-error></p>
+            </fieldset>
+
+            <fieldset class="form__group form__group--agreement">
+              <legend><span class="form__step">6</span> The agreement</legend>
+              <div class="agreement-card">
+                <div class="agreement-card__head">
+                  <h3 class="agreement-card__title" id="agreement-title">PRIVATE PLAYTEST AGREEMENT</h3>
+                  <span class="agreement-card__version">{{AGREEMENT_VERSION}}</span>
+                </div>
+                <p>If you are accepted, you agree that:</p>
+                <ul class="agreement-card__points">
+                  <li>The build is confidential and your access is yours alone.</li>
+                  <li>You won't share, upload or redistribute the build or its assets.</li>
+                  <li>You won't stream, post videos or screenshots, or publish unreleased information without permission.</li>
+                  <li>Hexenbane remains its owners' property, the build is unfinished, and access can be revoked.</li>
+                </ul>
+                <button type="button" class="btn btn--ghost" data-open-agreement aria-haspopup="dialog" aria-controls="agreement-dialog">Read the full agreement</button>
+              </div>
+              <div class="check" data-field="agreementAccepted">
+                <input id="agreementAccepted" name="agreementAccepted" type="checkbox" required aria-describedby="agreement-title agreementAccepted-error" />
+                <label for="agreementAccepted">I have read and agree to the Hexenbane Private Playtest Agreement.</label>
+              </div>
+              <p class="field__error" id="agreementAccepted-error" data-error></p>
+            </fieldset>
+
+            <div class="form__captcha" data-captcha hidden></div>
+
+            <p class="form__privacy">{{APPLY_PRIVACY}}</p>
+
+            <div class="form__submit">
+              <button type="submit" class="btn btn--primary btn--large" data-submit aria-describedby="submit-hint">
+                <span class="btn__spinner" aria-hidden="true"></span>
+                <span data-submit-label>Submit application</span>
+              </button>
+              <p class="form__submit-hint" id="submit-hint" data-submit-hint>Tick both boxes above to submit.</p>
+            </div>
+
+            <div class="notice notice--error" role="alert" tabindex="-1" hidden data-failure>
+              <p data-failure-message></p>
+            </div>
+            <p class="visually-hidden" role="status" aria-live="polite" data-live></p>
+          </form>
+
+          <div class="success" hidden data-success tabindex="-1" aria-labelledby="success-title">
+            <p class="success__sigil" aria-hidden="true">{{SIGIL}}</p>
+            <h3 class="success__title" id="success-title">Application received</h3>
+            <p class="success__label">Application ID</p>
+            <p class="success__id"><code data-success-id>HEX-PT-XXXXXX</code><button type="button" class="btn btn--small btn--ghost" data-copy-id>Copy</button></p>
+            <p>Thanks for your interest in Hexenbane. Applications are reviewed manually. If selected, you'll be contacted through Discord. Please remain in the Hexenbane server and ensure you can receive direct messages.</p>
+            <p class="success__small">Keep your application ID in case you need to contact us about it.</p>
+            <a class="btn btn--ghost" href="{{DISCORD_URL}}" data-discord-link rel="noopener noreferrer" target="_blank">{{DISCORD_ICON}}<span>Open the Hexenbane Discord</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+        <p class="section__kicker">Before you ask</p>
+        {{FAQ}}
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p class="footer__mark">HEXENBANE</p>
+        <ul class="footer__links" role="list">
+          {{SOCIAL_LINKS}}
+          <li><button type="button" class="linklike" data-open-agreement aria-haspopup="dialog" aria-controls="agreement-dialog">Private Playtest Agreement</button></li>
+        </ul>
+        <p class="footer__legal">{{FOOTER_LEGAL}}</p>
+      </div>
+    </footer>
+
+    <dialog class="dialog" id="agreement-dialog" aria-labelledby="agreement-dialog-title">
+      <div class="dialog__frame">
+        <header class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="agreement-dialog-title">Private Playtest Agreement</h2>
+            <p class="dialog__meta">Version {{AGREEMENT_VERSION}}</p>
+          </div>
+          <button type="button" class="dialog__close" data-close-dialog aria-label="Close the agreement">✕</button>
+        </header>
+        <div class="dialog__body prose" tabindex="0" aria-label="Agreement text">{{AGREEMENT_HTML}}</div>
+        <footer class="dialog__foot">
+          <button type="button" class="btn btn--ghost" data-close-dialog>Close</button>
+          <button type="button" class="btn btn--primary" data-accept-agreement>I agree</button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog class="lightbox" id="lightbox" aria-label="Screenshot viewer">
+      <figure class="lightbox__figure">
+        <img alt="" data-lightbox-img />
+        <figcaption data-lightbox-caption></figcaption>
+      </figure>
+      <button type="button" class="lightbox__nav lightbox__nav--prev" data-lightbox-prev aria-label="Previous screenshot">‹</button>
+      <button type="button" class="lightbox__nav lightbox__nav--next" data-lightbox-next aria-label="Next screenshot">›</button>
+      <button type="button" class="lightbox__close" data-close-dialog aria-label="Close the screenshot viewer">✕</button>
+    </dialog>
+  </body>
+</html>

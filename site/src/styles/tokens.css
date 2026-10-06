@@ -1,0 +1,59 @@
+/* Design tokens: colours, type and spacing. Change the look from here. */
+:root {
+  color-scheme: dark;
+
+  /* Ink: the near-black blues and violets everything sits on */
+  --ink-0: #07060c;
+  --ink-1: #0c0a16;
+  --ink-2: #131026;
+  --ink-3: #1d1838;
+  --ink-4: #2b2452;
+
+  /* Lantern light: the restrained violet-blue accent */
+  --violet-200: #ddd3ff;
+  --violet-300: #c3b4fb;
+  --violet-400: #a08ce8;
+  --violet-500: #7a62cf;
+  --violet-600: #57409f;
+  --violet-700: #3a2a70;
+  --blue-400: #7f97e6;
+  --blue-600: #3b4c94;
+
+  /* Text */
+  --text-strong: #f1edfb;
+  --text: #cfc8e4;
+  --text-muted: #9c94b8;
+  --text-faint: #6d6690;
+
+  /* Feedback (kept muted so it doesn't break the palette) */
+  --danger: #e98ea0;
+  --danger-edge: #a3475e;
+  --success: #b9a8ff;
+
+  --focus: #e9e2ff;
+  --glow: rgba(140, 115, 240, 0.45);
+
+  --font-display: "Jacquard 24", "Pixelify Sans", serif;
+  --font-ui: "Pixelify Sans", ui-monospace, monospace;
+  --font-body: "Crimson Pro", Georgia, "Times New Roman", serif;
+
+  --step--1: clamp(0.85rem, 0.82rem + 0.15vw, 0.95rem);
+  --step-0: clamp(1.08rem, 1.02rem + 0.3vw, 1.25rem);
+  --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
+  --step-2: clamp(1.6rem, 1.35rem + 1.2vw, 2.3rem);
+  --step-3: clamp(2.3rem, 1.8rem + 2.6vw, 3.9rem);
+
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  --measure: 64ch;
+  --content: 1120px;
+
+  /* A two-step pixel corner, used by buttons and panels */
+  --notch: polygon(
+    4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%,
+    4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px),
+    0 4px, 2px 4px, 2px 2px, 4px 2px
+  );
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
