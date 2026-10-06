@@ -1,0 +1,19 @@
+{
+  "name": "@hexenbane-playtest/discord",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-time, rerunnable setup of the Hexenbane Discord server's roles, categories and channels.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.2.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.0",
+    "typescript": "~6.0.3"
+  }
+}
