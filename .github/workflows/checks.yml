@@ -1,0 +1,68 @@
+# Runs on pull requests (and pushes to other branches): everything except deploying.
+
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  site-and-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run agreement:check
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build with a project-pages base path
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_DISCORD_INVITE_URL: https://discord.gg/example
+        run: npm run build -w site
+      - name: Every asset URL uses the base path
+        run: |
+          ! grep -oE '(src|href)="/[^"]*"' site/dist/index.html | grep -v '"/${{ github.event.repository.name }}/'
+      - run: npm run check:secrets
+
+  edge-function:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --config supabase/functions/submit-playtest-application/deno.json supabase/functions/submit-playtest-application/index.ts
+      - run: deno lint
+        working-directory: supabase/functions
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v5
+      - name: Apply the migrations on a Supabase-like database
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/supabase_roles_bootstrap.sql
+          for f in supabase/migrations/*.sql; do psql -v ON_ERROR_STOP=1 -f "$f"; done
+      - name: Security and integrity checks
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/security_checks.sql

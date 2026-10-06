@@ -1,0 +1,76 @@
+# Builds the playtest website and publishes it to GitHub Pages on every push to main.
+#
+# Public configuration comes from repository VARIABLES (Settings → Secrets and variables →
+# Actions → Variables), not secrets, because every value ends up in the public website:
+#   VITE_SUPABASE_URL         required
+#   VITE_DISCORD_INVITE_URL   required
+#   VITE_SUPABASE_ANON_KEY    optional
+#   VITE_TURNSTILE_SITE_KEY   optional
+#   SITE_BASE_PATH            optional; defaults to /<repository name>/ (use / for a custom domain)
+#   SITE_URL                  optional; the public address, for link previews (defaults to the Pages URL)
+# Server secrets (Discord webhook, service role key) never belong here.
+
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check the agreement version and hash are in sync
+        run: npm run agreement:check
+
+      - name: Type-check and test
+        run: npm run typecheck && npm test
+
+      - name: Build the website
+        env:
+          BASE_PATH: ${{ vars.SITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
+          REQUIRE_PUBLIC_CONFIG: "true"
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_DISCORD_INVITE_URL: ${{ vars.VITE_DISCORD_INVITE_URL }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+        run: npm run build -w site
+
+      - name: Make sure no secrets were bundled
+        run: npm run check:secrets
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
