@@ -30,12 +30,14 @@ const VIEW_VOICE = P.ViewChannel | P.Connect;
 const SEND = P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.CreatePrivateThreads;
 const MANAGE = P.ManageMessages | P.ManageThreads;
 /**
- * What the bot keeps on every hidden channel so it can still fix them on a later run. Its role's
- * Manage Roles still applies inside the channel; putting Manage Roles ("Manage Permissions") in
- * an overwrite itself is refused by Discord with Missing Permissions unless the bot is an
- * Administrator.
+ * The bot's own allow on every hidden category and channel: every permission any overwrite here
+ * can mention, so the bot holds each one it grants or denies in that channel and its category.
+ * Discord refuses (Missing Permissions) to set an overwrite bit the bot lacks there, and hidden
+ * channels deny @everyone, which the bot is part of. Manage Roles ("Manage Permissions") is left
+ * out: Discord only lets an Administrator put it in an overwrite, and the bot's role still
+ * carries it into the channel.
  */
-export const BOT_CHANNEL_ACCESS = P.ViewChannel | P.ManageChannels;
+export const BOT_CHANNEL_ACCESS = VIEW_TEXT | VIEW_VOICE | SEND | MANAGE | P.ManageChannels;
 
 export interface ResolvedChannel {
   view: Audience[];
@@ -73,7 +75,7 @@ export function channelOverwrites(
     get({ kind: "everyone" }).deny |= view;
     for (const a of resolved.view) if (a !== "everyone") get(role(a)).allow |= view;
     // The bot must keep seeing the channels it hides, or it can't manage them later.
-    get({ kind: "bot" }).allow |= BOT_CHANNEL_ACCESS | (isVoice ? P.Connect : 0n);
+    get({ kind: "bot" }).allow |= BOT_CHANNEL_ACCESS;
   }
 
   // Read-only for everyone who can view but isn't listed in `post`.

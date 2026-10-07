@@ -6,6 +6,7 @@ import {
   BOT_CHANNEL_ACCESS,
   DISCORD_DEFAULT_EVERYONE,
   effectivePermissions,
+  names,
   P,
   requiredBotPermissions,
   type Target,
@@ -126,7 +127,7 @@ function emptyServer(extra: Partial<Snapshot> = {}): Snapshot {
 
 function simulate(snap: Snapshot, actions: Action[]): Snapshot {
   const next: Snapshot = structuredClone(snap);
-  let nextId = 1000;
+  let nextId = Math.max(1000, ...[...snap.roles, ...snap.channels].map((x) => Number(x.id) + 1));
   const roleId = (t: Target) => {
     if (t.kind === "everyone") return next.everyoneId;
     if (t.kind === "bot") return next.botUserId;
@@ -142,7 +143,30 @@ function simulate(snap: Snapshot, actions: Action[]): Snapshot {
     const managedIds = new Set([next.everyoneId, next.botUserId, ...serverConfig.roles.map((r) => next.roles.find((x) => x.name === r.name)?.id)]);
     c.overwrites = [...c.overwrites.filter((o) => !managedIds.has(o.id)), ...overwrites.map(toSnap)];
   };
+  // Discord refuses an overwrite bit the bot doesn't hold where it's set: in the parent category
+  // for a channel, in the server for a category. Manage Roles needs Administrator.
+  const botHolds = (parent: SnapChannel | undefined) => {
+    let perms = next.botPermissions;
+    for (const o of parent?.overwrites ?? []) if (o.id === next.everyoneId) perms = (perms & ~o.deny) | o.allow;
+    for (const o of parent?.overwrites ?? []) if (o.id === next.botUserId) perms = (perms & ~o.deny) | o.allow;
+    return perms;
+  };
+  const check = (what: string, overwrites: { allow: bigint; deny: bigint }[], parent: SnapChannel | undefined) => {
+    const held = botHolds(parent);
+    for (const o of overwrites) {
+      const bits = o.allow | o.deny;
+      if (bits & P.ManageRoles) throw new Error(`Missing Permissions: ${what} puts Manage Roles in an overwrite`);
+      if ((bits & held) !== bits) throw new Error(`Missing Permissions: ${what} sets ${names(bits & ~held).join(", ")}`);
+    }
+  };
+  const parentOf = (id: string) => {
+    const c = next.channels.find((x) => x.id === id)!;
+    return next.channels.find((x) => x.id === c.parentId);
+  };
   for (const a of actions) {
+    if (a.type === "create-category") check(a.name, a.overwrites, undefined);
+    if (a.type === "create-channel") check(a.channel.name, a.overwrites, next.channels.find((c) => c.kind === "category" && c.name === a.category));
+    if (a.type === "category-overwrites" || a.type === "channel-overwrites") check(a.channelId, a.overwrites, parentOf(a.channelId));
     switch (a.type) {
       case "everyone-permissions":
         next.everyonePermissions &= ~a.remove;
@@ -226,6 +250,24 @@ describe("provisioning plan", () => {
     const second = buildPlan(serverConfig, after);
     expect(second.actions).toEqual([]);
     expect(second.blockers).toEqual([]);
+  });
+
+  it("finishes a run that an older version stopped part-way through the hidden categories", () => {
+    const full = simulate(emptyServer(), buildPlan(serverConfig, emptyServer()).actions);
+    // The older version gave the bot only View Channel and Manage Channels on hidden channels,
+    // and stopped at the first channel of PRIVATE PLAYTEST.
+    const stopped: Snapshot = structuredClone(full);
+    for (const c of stopped.channels) {
+      for (const o of c.overwrites) if (o.id === stopped.botUserId) o.allow = P.ViewChannel | P.ManageChannels;
+    }
+    const later = new Set(["PRIVATE PLAYTEST", "INTERNAL DEVELOPMENT", "VOICE"]);
+    const keep = stopped.channels.filter((c) => c.kind !== "category" || !later.has(c.name) || c.name === "PRIVATE PLAYTEST");
+    const keptIds = new Set(keep.map((c) => c.id));
+    stopped.channels = keep.filter((c) => c.parentId === null || keptIds.has(c.parentId) && stopped.channels.find((p) => p.id === c.parentId)!.name !== "PRIVATE PLAYTEST");
+    const plan = buildPlan(serverConfig, stopped);
+    expect(plan.blockers).toEqual([]);
+    const after = simulate(stopped, plan.actions);
+    expect(buildPlan(serverConfig, after).actions).toEqual([]);
   });
 
   it("never touches channels and roles it doesn't manage", () => {
