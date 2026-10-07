@@ -29,8 +29,13 @@ const VIEW_TEXT = P.ViewChannel | P.ReadMessageHistory;
 const VIEW_VOICE = P.ViewChannel | P.Connect;
 const SEND = P.SendMessages | P.SendMessagesInThreads | P.CreatePublicThreads | P.CreatePrivateThreads;
 const MANAGE = P.ManageMessages | P.ManageThreads;
-/** What the bot keeps on every hidden channel so it can still fix them on a later run. */
-export const BOT_CHANNEL_ACCESS = P.ViewChannel | P.ManageChannels | P.ManageRoles;
+/**
+ * What the bot keeps on every hidden channel so it can still fix them on a later run. Its role's
+ * Manage Roles still applies inside the channel; putting Manage Roles ("Manage Permissions") in
+ * an overwrite itself is refused by Discord with Missing Permissions unless the bot is an
+ * Administrator.
+ */
+export const BOT_CHANNEL_ACCESS = P.ViewChannel | P.ManageChannels;
 
 export interface ResolvedChannel {
   view: Audience[];

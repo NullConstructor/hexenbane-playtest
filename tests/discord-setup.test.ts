@@ -87,6 +87,16 @@ describe("who can see what", () => {
     const create = plan.actions.find((a) => a.type === "create-channel" && a.channel.name === ops.channels[0].name) as Extract<Action, { type: "create-channel" }>;
     const perms = effectivePermissions(DISCORD_DEFAULT_EVERYONE, [], create.overwrites, true);
     expect(perms & BOT_CHANNEL_ACCESS).toBe(BOT_CHANNEL_ACCESS);
+    // Its role's Manage Roles still reaches inside, so a later run can fix the overwrites.
+    const withRole = effectivePermissions(P.ViewChannel, [{ key: "developer", permissions: requiredBotPermissions(serverConfig) }], create.overwrites, true);
+    expect(withRole & P.ManageRoles).toBe(P.ManageRoles);
+  });
+
+  it("never puts Manage Permissions in an overwrite (Discord refuses it without Administrator)", () => {
+    const plan = buildPlan(serverConfig, emptyServer());
+    const overwrites = plan.actions.flatMap((a) => ("overwrites" in a ? a.overwrites : []));
+    expect(overwrites.length).toBeGreaterThan(20);
+    for (const o of overwrites) expect((o.allow | o.deny) & P.ManageRoles).toBe(0n);
   });
 });
 
