@@ -200,10 +200,11 @@ export async function applyPlan(guild: Guild, config: ServerConfig, actions: Act
           permissionOverwrites: toDiscord(action.overwrites),
           reason: "Hexenbane provisioning",
         };
+        let created: GuildBasedChannel;
         if (action.kind === "voice") {
-          await guild.channels.create({ ...base, type: ChannelType.GuildVoice });
+          created = await guild.channels.create({ ...base, type: ChannelType.GuildVoice });
         } else if (action.kind === "forum") {
-          await guild.channels.create({
+          created = await guild.channels.create({
             ...base,
             type: ChannelType.GuildForum,
             topic: action.channel.topic,
@@ -211,13 +212,16 @@ export async function applyPlan(guild: Guild, config: ServerConfig, actions: Act
             availableTags: (action.channel.tags ?? []).slice(0, 20).map((name) => ({ name })),
           });
         } else {
-          await guild.channels.create({
+          created = await guild.channels.create({
             ...base,
             type: CHANNEL_TYPES[action.kind],
             topic: action.channel.topic,
             rateLimitPerUser: action.channel.slowmode,
           });
         }
+        // Discord copies the category's overwrites onto a channel created with none of its own;
+        // clear whatever doesn't belong so a public channel doesn't inherit the category's extras.
+        await reconcile(created.id, action.overwrites);
         break;
       }
       case "move-channel": {
