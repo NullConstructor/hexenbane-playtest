@@ -31,6 +31,7 @@ npm run discord -- --apply            # make the changes
 npm run discord -- --invite-url       # bot invite link with exactly the permissions needed
 npm run discord -- --matrix           # table of who can see and post in every channel
 npm run discord -- --apply --fix-role-permissions   # also reset drifted role permissions
+npm run discord -- --forum-tags       # read-only: #bug-reports tag ids for DISCORD_BUG_REPORTS_TAGS
 ```
 
 ## 1. Create the bot (Discord Developer Portal)

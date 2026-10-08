@@ -41,7 +41,12 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno check --config supabase/functions/submit-playtest-application/deno.json supabase/functions/submit-playtest-application/index.ts
+      - run: >-
+          deno check --config supabase/functions/submit-playtest-application/deno.json
+          supabase/functions/submit-playtest-application/index.ts
+          supabase/functions/ingest-telemetry/index.ts
+          supabase/functions/submit-crash/index.ts
+          supabase/functions/submit-feedback/index.ts
       - run: deno lint
         working-directory: supabase/functions
 

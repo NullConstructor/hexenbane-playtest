@@ -222,7 +222,7 @@
 
             <div class="form__captcha" data-captcha hidden></div>
 
-            <p class="form__privacy">{{APPLY_PRIVACY}}</p>
+            <p class="form__privacy">{{APPLY_PRIVACY}} <button type="button" class="linklike" data-open-privacy aria-haspopup="dialog" aria-controls="privacy-dialog">Read the Privacy Policy</button></p>
 
             <div class="form__submit">
               <button type="submit" class="btn btn--primary btn--large" data-submit aria-describedby="submit-hint">
@@ -262,6 +262,7 @@
         <ul class="footer__links" role="list">
           {{SOCIAL_LINKS}}
           <li><button type="button" class="linklike" data-open-agreement aria-haspopup="dialog" aria-controls="agreement-dialog">Private Playtest Agreement</button></li>
+          <li><button type="button" class="linklike" data-open-privacy aria-haspopup="dialog" aria-controls="privacy-dialog">Privacy Policy</button></li>
         </ul>
         <p class="footer__legal">{{FOOTER_LEGAL}}</p>
       </div>
@@ -280,6 +281,22 @@
         <footer class="dialog__foot">
           <button type="button" class="btn btn--ghost" data-close-dialog>Close</button>
           <button type="button" class="btn btn--primary" data-accept-agreement>I agree</button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="privacy-dialog" aria-labelledby="privacy-dialog-title">
+      <div class="dialog__frame">
+        <header class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="privacy-dialog-title">Privacy Policy</h2>
+            <p class="dialog__meta">Version {{PRIVACY_VERSION}}</p>
+          </div>
+          <button type="button" class="dialog__close" data-close-dialog aria-label="Close the privacy policy">✕</button>
+        </header>
+        <div class="dialog__body prose" tabindex="0" aria-label="Privacy policy text">{{PRIVACY_HTML}}</div>
+        <footer class="dialog__foot">
+          <button type="button" class="btn btn--ghost" data-close-dialog>Close</button>
         </footer>
       </div>
     </dialog>

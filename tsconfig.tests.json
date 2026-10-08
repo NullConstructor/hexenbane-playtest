@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["tests", "vitest.config.ts", "supabase/functions/_shared/application.ts", "supabase/functions/_shared/discord.ts", "supabase/functions/_shared/handler.ts", "supabase/functions/_shared/cors.ts", "supabase/functions/_shared/ids.ts", "supabase/functions/_shared/captcha.ts"]
+  "include": ["tests", "vitest.config.ts", "supabase/functions/_shared/application.ts", "supabase/functions/_shared/discord.ts", "supabase/functions/_shared/handler.ts", "supabase/functions/_shared/cors.ts", "supabase/functions/_shared/ids.ts", "supabase/functions/_shared/captcha.ts", "supabase/functions/_shared/game-validation.ts", "supabase/functions/_shared/game-http.ts", "supabase/functions/_shared/discord-forum.ts", "supabase/functions/_shared/telemetry.ts", "supabase/functions/_shared/crash.ts", "supabase/functions/_shared/feedback.ts"]
 }

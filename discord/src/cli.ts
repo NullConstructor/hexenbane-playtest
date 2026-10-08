@@ -5,11 +5,12 @@
 //   npm run discord -- --apply --fix-role-permissions   also reset drifted role permissions
 //   npm run discord -- --invite-url     print the bot invite URL with exactly the permissions needed
 //   npm run discord -- --matrix         print who can see and post where (no login needed)
+//   npm run discord -- --forum-tags     print the #bug-reports tag ids for DISCORD_BUG_REPORTS_TAGS (read-only)
 //
 // Reads DISCORD_BOT_TOKEN and DISCORD_GUILD_ID from discord/.env (see .env.example).
 
 import { fileURLToPath } from "node:url";
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { ChannelType, Client, Events, type ForumChannel, GatewayIntentBits } from "discord.js";
 import { config as loadEnv } from "dotenv";
 import { serverConfig } from "../server-config.ts";
 import { applyPlan, takeSnapshot } from "./discord-io.ts";
@@ -20,7 +21,7 @@ import { buildPlan, describeAction } from "./plan.ts";
 loadEnv({ path: fileURLToPath(new URL("../.env", import.meta.url)), quiet: true });
 
 const args = new Set(process.argv.slice(2));
-const known = ["--apply", "--fix-role-permissions", "--invite-url", "--matrix", "--help", "-h"];
+const known = ["--apply", "--fix-role-permissions", "--invite-url", "--matrix", "--forum-tags", "--help", "-h"];
 for (const arg of args) {
   if (!known.includes(arg)) {
     console.error(`Unknown option ${arg}. Options: ${known.join(", ")}`);
@@ -44,7 +45,8 @@ if (args.has("--help") || args.has("-h")) {
   npm run discord -- --apply --fix-role-permissions
                                          also reset roles whose permissions drifted
   npm run discord -- --invite-url        print the bot invite URL with exactly the permissions needed
-  npm run discord -- --matrix            print who can see and post in each channel`);
+  npm run discord -- --matrix            print who can see and post in each channel
+  npm run discord -- --forum-tags        print the #bug-reports forum tag ids (for DISCORD_BUG_REPORTS_TAGS)`);
   process.exit(0);
 }
 
@@ -90,6 +92,34 @@ if (!token || !guildId) {
 if (!/^\d{17,20}$/.test(guildId)) {
   console.error(c.red("DISCORD_GUILD_ID should be the server's numeric ID (right-click the server icon → Copy Server ID)."));
   process.exit(1);
+}
+
+if (args.has("--forum-tags")) {
+  // Read-only: the game's bug-report endpoints tag forum posts by id, and Discord's app has no
+  // "Copy ID" for forum tags. This prints the JSON for the DISCORD_BUG_REPORTS_TAGS secret.
+  const reader = new Client({ intents: [GatewayIntentBits.Guilds] });
+  let code = 0;
+  try {
+    await reader.login(token);
+    await new Promise<void>((resolve) => (reader.isReady() ? resolve() : reader.once(Events.ClientReady, () => resolve())));
+    const guild = await reader.guilds.fetch(guildId);
+    const forum = [...(await guild.channels.fetch()).values()].find(
+      (ch) => ch?.type === ChannelType.GuildForum && ch.name === "bug-reports",
+    ) as ForumChannel | undefined;
+    if (!forum) throw new Error("No #bug-reports forum channel found. Run `npm run discord -- --apply` first.");
+    const wanted = ["New", "Crash", "UI", "Combat"];
+    const tags = Object.fromEntries(forum.availableTags.filter((t) => wanted.includes(t.name)).map((t) => [t.name, t.id]));
+    const missing = wanted.filter((name) => !(name in tags));
+    if (missing.length) console.log(c.yellow(`⚠ #bug-reports has no tag named ${missing.join(", ")}; those reports go untagged.`));
+    console.log(c.bold("Set this as the Supabase secret DISCORD_BUG_REPORTS_TAGS:"));
+    console.log(JSON.stringify(tags));
+  } catch (err) {
+    console.error(c.red(`\n✖ ${err instanceof Error ? err.message : String(err)}`));
+    code = 1;
+  } finally {
+    await reader.destroy();
+  }
+  process.exit(code);
 }
 
 const apply = args.has("--apply");

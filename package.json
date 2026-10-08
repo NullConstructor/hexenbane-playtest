@@ -21,8 +21,8 @@
     "agreement:check": "node scripts/agreement.mjs check",
     "check:secrets": "node scripts/check-secrets.mjs",
     "discord": "npm run start -w discord --",
-    "function:check": "deno check --config supabase/functions/submit-playtest-application/deno.json supabase/functions/submit-playtest-application/index.ts",
-    "test:e2e": "deno test --allow-env --allow-net --config supabase/functions/submit-playtest-application/deno.json supabase/tests/e2e.test.ts",
+    "function:check": "deno check --config supabase/functions/submit-playtest-application/deno.json supabase/functions/submit-playtest-application/index.ts supabase/functions/ingest-telemetry/index.ts supabase/functions/submit-crash/index.ts supabase/functions/submit-feedback/index.ts",
+    "test:e2e": "deno test --allow-env --allow-net --config supabase/functions/submit-playtest-application/deno.json supabase/tests/e2e.test.ts supabase/tests/game-e2e.test.ts",
     "verify": "npm run agreement:check && npm run typecheck && npm test && npm run build && npm run check:secrets"
   },
   "devDependencies": {

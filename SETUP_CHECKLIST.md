@@ -80,3 +80,23 @@ Pages URL must be in `ALLOWED_ORIGINS` before the live form can submit.
       and share the link.
 
 When a real application arrives, follow [README §10, Approving a tester](README.md#10-approving-a-tester).
+
+## H. The game's telemetry, crash reports and F8 reports ([README §13](README.md#13-game-telemetry-crash-reports-and-f8-reports))
+
+- [ ] `npx supabase db push` (adds `telemetry_events`, `crash_reports`, `crash_signatures`,
+      `feedback_reports`, `game_rate_limits` and the balance views).
+- [ ] Table Editor: the five new tables show **RLS enabled**. (Optional) SQL Editor → run
+      `supabase/tests/security_checks.sql` again → `ALL DATABASE CHECKS PASSED`.
+- [ ] `#bug-reports` (a forum) → Edit Channel → Integrations → Webhooks → New Webhook
+      `Hexenbane Bug Reports` → copy URL.
+- [ ] `npx supabase secrets set DISCORD_BUG_REPORTS_WEBHOOK_URL="<that URL>"` (nowhere else, ever).
+- [ ] (Optional) `npm run discord -- --forum-tags` → `npx supabase secrets set DISCORD_BUG_REPORTS_TAGS='<the JSON it printed>'`.
+- [ ] `npx supabase secrets set RATE_LIMIT_IP_SALT="<a long random string>"` (e.g. `openssl rand -hex 32`).
+- [ ] `npx supabase functions deploy ingest-telemetry`
+- [ ] `npx supabase functions deploy submit-crash`
+- [ ] `npx supabase functions deploy submit-feedback`
+- [ ] In the game's `project.godot`, set `hexenbane/backend_url` to
+      `https://<ref>.supabase.co/functions/v1` (no trailing slash), export a build.
+- [ ] In game, press **F8** and send a test report: a post appears in `#bug-reports` (tagged
+      **New** if tags are set, nobody pinged) and a row in `feedback_reports` with `discord_ok = true`.
+- [ ] Play a few fights, quit, then SQL Editor → `select * from quarry_balance;` shows them.
