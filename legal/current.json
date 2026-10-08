@@ -1,4 +1,4 @@
 {
   "$comment": "The agreement applicants accept right now. To publish a new version, add a new file (never edit an old one) and point this at it, then run: npm run agreement:sync",
-  "current": "playtest-agreement-v1.md"
+  "current": "playtest-agreement-v2.md"
 }

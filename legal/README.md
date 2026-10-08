@@ -12,6 +12,8 @@
 | File | What it is |
 | --- | --- |
 | `legal/playtest-agreement-v1.md` | The text of v1. **Never edit it after it is published.** |
+| `legal/playtest-agreement-v2.md` | The text of v2 (adds "Data and privacy"). Applicants accept it from Oct 8 2026. |
+| `legal/privacy-policy-v1.md` | The playtest Privacy Policy: the application, the game's telemetry, crash reports and F8 reports. Shown in the site's Privacy Policy dialog. Publish changes as a new file. |
 | `legal/current.json` | Which file applicants accept right now. |
 | `legal/agreement-ledger.json` | Generated record of every version and its SHA-256 hash. Committed, never hand-edited. |
 | `supabase/functions/_shared/agreement.generated.ts` | Generated copy the Edge Function and the website both import. Never hand-edited. |

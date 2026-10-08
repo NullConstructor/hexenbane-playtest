@@ -6,6 +6,12 @@
       "file": "playtest-agreement-v1.md",
       "effective": "2026-10-06",
       "sha256": "d5f255fc9bea85ef26e583dd2fba4cee04bce27859bf3ce0fce832df432bee5e"
+    },
+    {
+      "version": "HEXENBANE-PLAYTEST-2026-10-v2",
+      "file": "playtest-agreement-v2.md",
+      "effective": "2026-10-08",
+      "sha256": "9aceedfceef8376daaae61b4942df8c2fbbf62f2649bda6190c9b51795dc0144"
     }
   ]
 }
