@@ -5,7 +5,9 @@ Everything behind the Hexenbane private playtest:
 1. **A public website** (GitHub Pages) where people learn about Hexenbane, join the Discord
    server, read the Private Playtest Agreement and apply.
 2. **A Supabase backend**: one Edge Function that validates each application and stores it, a
-   locked-down database table, and a Discord notification for every application.
+   locked-down database table, and a Discord notification for every application. Three more
+   Edge Functions serve the game itself: gameplay telemetry, crash reports and the in-game F8
+   bug report form ([section 13](#13-game-telemetry-crash-reports-and-f8-reports)).
 3. **A Discord setup script** that turns your existing Community server into an organised
    Hexenbane server with roles, a hidden staff area and a private tester area.
 
@@ -18,6 +20,10 @@ Visitor ──► GitHub Pages site ──POST──► Supabase Edge Function �
                                           │  validates, sanitises,     (no public access)
                                           │  attaches agreement v/hash
                                           └──► Discord webhook ──► #playtest-applications (staff only)
+
+Hexenbane game ──POST──► ingest-telemetry ──► telemetry_events ──► balance views (SQL Editor)
+               ──POST──► submit-crash ──────► crash_reports ──────► first of each crash ─┐
+               ──POST──► submit-feedback ───► feedback_reports ───► every F8 report ─────┴─► #bug-reports (forum)
 ```
 
 > New here? Follow **[SETUP_CHECKLIST.md](SETUP_CHECKLIST.md)** from top to bottom. It takes you
@@ -41,6 +47,7 @@ Visitor ──► GitHub Pages site ──POST──► Supabase Edge Function �
 - [10. Approving a tester](#10-approving-a-tester)
 - [11. Updating the agreement](#11-updating-the-agreement)
 - [12. Updating the website](#12-updating-the-website)
+- [13. Game telemetry, crash reports and F8 reports](#13-game-telemetry-crash-reports-and-f8-reports)
 - [Anti-spam, and adding a CAPTCHA later](#anti-spam-and-adding-a-captcha-later)
 - [Checks and tests](#checks-and-tests)
 - [Extending it later](#extending-it-later)
@@ -74,9 +81,13 @@ Visitor ──► GitHub Pages site ──POST──► Supabase Edge Function �
 │   ├── config.toml               ← Supabase CLI config (function has JWT check off)
 │   ├── migrations/               ← database schema, RLS, triggers
 │   ├── functions/
-│   │   ├── .env.example          ← SERVER secrets template (webhook URL, origins)
-│   │   ├── submit-playtest-application/index.ts   ← the Edge Function
-│   │   └── _shared/              ← validation, Discord embed, CORS, IDs, agreement (generated)
+│   │   ├── .env.example          ← SERVER secrets template (webhook URLs, origins, IP salt)
+│   │   ├── submit-playtest-application/index.ts   ← the website's Edge Function
+│   │   ├── ingest-telemetry/index.ts              ← the game: gameplay events
+│   │   ├── submit-crash/index.ts                  ← the game: crashes and script errors
+│   │   ├── submit-feedback/index.ts               ← the game: F8 bug reports
+│   │   └── _shared/              ← validation, Discord embeds, CORS, IDs, agreement (generated),
+│   │                               game endpoints (telemetry.ts, crash.ts, feedback.ts, game-*.ts)
 │   └── tests/                    ← SQL security checks, end-to-end test
 ├── discord/
 │   ├── server-config.ts          ← the server layout: roles, categories, channels
@@ -98,6 +109,10 @@ Visitor ──► GitHub Pages site ──POST──► Supabase Edge Function �
 | Discord invite URL | GitHub variable `VITE_DISCORD_INVITE_URL` | Yes |
 | **Supabase service_role / secret key** | Supabase only (injected into the function automatically) | **NEVER** |
 | **Discord webhook URL** | Supabase secret `DISCORD_WEBHOOK_URL` | **NEVER** |
+| **#bug-reports webhook URL** | Supabase secret `DISCORD_BUG_REPORTS_WEBHOOK_URL` | **NEVER** |
+| **IP hash salt** | Supabase secret `RATE_LIMIT_IP_SALT` | **NEVER** |
+| #bug-reports forum tag ids | Supabase secret `DISCORD_BUG_REPORTS_TAGS` | Harmless; kept with the others |
+| Functions base URL (`https://<ref>.supabase.co/functions/v1`) | The game's `project.godot` (`hexenbane/backend_url`) | Yes, safe |
 | **Discord bot token** | `discord/.env` on your PC only | **NEVER** |
 | Database password | Your password manager | **NEVER** |
 
@@ -254,6 +269,9 @@ npx supabase secrets list            # shows names and digests, never values
 | `DISCORD_WEBHOOK_URL` | Yes, for notifications | The `#playtest-applications` webhook URL (step 6). Without it, applications are still stored; the function logs that Discord wasn't notified. |
 | `ALLOWED_ORIGINS` | Yes | Comma-separated origins allowed to submit. Without it, only `localhost` works. |
 | `TURNSTILE_SECRET_KEY` | No | Turns on the Cloudflare Turnstile check (see anti-spam). |
+| `DISCORD_BUG_REPORTS_WEBHOOK_URL` | Yes, for the game's reports | The `#bug-reports` forum webhook ([section 13](#13-game-telemetry-crash-reports-and-f8-reports)). Without it crashes are only stored and every F8 report answers "not delivered". |
+| `DISCORD_BUG_REPORTS_TAGS` | No | `#bug-reports` tag ids as JSON, from `npm run discord -- --forum-tags`. Without it posts are untagged. |
+| `RATE_LIMIT_IP_SALT` | Yes, for the game's endpoints | A long random string that salts the hashed IPs used for per-IP rate limits. Without it only the per-install limits apply. |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are provided automatically; don't set them.
 Secrets apply immediately to new requests; no redeploy needed.
@@ -620,6 +638,186 @@ on the web, follow the three steps at the top of `fonts.css`.
 
 Every change merged to `main` redeploys the site within a couple of minutes.
 
+## 13. Game telemetry, crash reports and F8 reports
+
+Three more Edge Functions are called by the game itself (not the website):
+
+| Function | The game sends | Stored in | Discord |
+| --- | --- | --- | --- |
+| `ingest-telemetry` | batches of gameplay events | `telemetry_events` | never |
+| `submit-crash` | a crash or script error with the log tail | `crash_reports` (+ `crash_signatures`) | the **first** report of each crash per version, as a `#bug-reports` post with `crash-log.txt` |
+| `submit-feedback` | the F8 report form: title, details, screenshot, log | `feedback_reports` (no screenshot or log) | every report, as a `#bug-reports` post with `screenshot.jpg` and `game-log.txt` |
+
+The game finds them through one setting in its `project.godot`:
+
+```ini
+[hexenbane]
+backend_url="https://YOUR-PROJECT-REF.supabase.co/functions/v1"
+```
+
+(no trailing slash; the game appends `/ingest-telemetry`, `/submit-crash`, `/submit-feedback`).
+
+### Deploy (you do this; nothing deploys automatically)
+
+1. **Apply the migration** (creates the tables, rate limits and views):
+
+   ```bash
+   npx supabase db push
+   ```
+
+   Then, optionally, SQL Editor → paste all of `supabase/tests/security_checks.sql` → **Run** →
+   `ALL DATABASE CHECKS PASSED` (it rolls itself back).
+2. **Create the `#bug-reports` webhook.** `#bug-reports` is a **forum** channel (made by
+   `npm run discord -- --apply`). Hover it → **⚙ Edit Channel → Integrations → Webhooks → New
+   Webhook** → name it `Hexenbane Bug Reports` → **Copy Webhook URL** → **Save Changes**.
+   Store it only as a secret:
+
+   ```bash
+   npx supabase secrets set DISCORD_BUG_REPORTS_WEBHOOK_URL="paste-it-here"
+   ```
+
+3. **Forum tags (optional).** With the bot still in the server and able to see `#bug-reports`,
+   run `npm run discord -- --forum-tags`. It prints something like
+   `{"New":"1234…","Crash":"2345…","UI":"3456…","Combat":"4567…"}`. Set it:
+
+   ```bash
+   npx supabase secrets set DISCORD_BUG_REPORTS_TAGS='{"New":"1234…","Crash":"2345…","UI":"3456…","Combat":"4567…"}'
+   ```
+
+   (In PowerShell, the same single quotes work.) Every post gets **New**; a report of kind
+   Crash also gets **Crash**, UI gets **UI**, Balance gets **Combat**; Bug and Other get only New.
+   If the bot is gone, skip this or re-invite it (`npm run discord -- --invite-url`).
+4. **The IP salt.** Any long random string; never share it or commit it:
+
+   ```bash
+   npx supabase secrets set RATE_LIMIT_IP_SALT="$(openssl rand -hex 32)"
+   ```
+
+   PowerShell: `npx supabase secrets set "RATE_LIMIT_IP_SALT=$([guid]::NewGuid().ToString('N'))$([guid]::NewGuid().ToString('N'))"`
+5. **Deploy the three functions** (`supabase/config.toml` already turns JWT verification off for
+   them; the game has no logged-in user, so each function validates and rate-limits itself):
+
+   ```bash
+   npx supabase functions deploy ingest-telemetry
+   npx supabase functions deploy submit-crash
+   npx supabase functions deploy submit-feedback
+   ```
+
+6. **Point the game at them:** set `hexenbane/backend_url` in the game's `project.godot` to
+   `https://YOUR-PROJECT-REF.supabase.co/functions/v1`, export a build, press **F8** in game and
+   send a test report. A post appears in `#bug-reports` and a row in `feedback_reports`.
+
+### The contract
+
+Every request: `POST`, `Content-Type: application/json`, header `X-Hexenbane-Build: <version>`
+(semver-like such as `0.8.0` or `0.8.1-playtest`, at most 32 characters). Errors come back as
+`{ "ok": false, "error": "<code>", "message": "…", "fields"?: { "<field>": "<problem>" } }`:
+
+| Status | `error` | Meaning for the game |
+| --- | --- | --- |
+| 400 | `bad_build`, `invalid_json`, `validation_failed` | Don't retry; the payload is wrong. |
+| 405 / 415 | `method_not_allowed` / `unsupported_media_type` | Don't retry. |
+| 413 | `too_large` | Don't retry; send less. |
+| 429 | `rate_limited` | Retry after the `Retry-After` header (seconds). |
+| 500 | `server_error` | Retry later. |
+| 502 | `discord_failed` | Feedback only: saved, but not posted to Discord. |
+
+Ids: `install_id` is a random UUID v4 per installation; `session_id` a UUID per game run.
+Timestamps are ISO-8601 UTC (`2026-10-08T12:00:00Z`; a bare `2026-10-08T12:00:00` is read as UTC).
+The body's `version` is stored; it may differ from the header (a batch queued by an older build).
+
+**`ingest-telemetry`** (body ≤ 512 KB) → `200 { "ok": true, "accepted": n, "duplicates": d }`
+
+```json
+{ "install_id": "uuid-v4", "session_id": "uuid", "version": "0.8.0",
+  "events": [ { "name": "fight_end", "seq": 12, "at": "2026-10-08T12:00:00Z", "data": { } } ] }
+```
+
+1 to 200 events. `name` is one of `session_start`, `session_end`, `hunt_start`, `fight_end`,
+`card_offer`, `boss_reward`, `purchase`, `inscription_cut`, `scene_lead`, `hunt_end`,
+`feedback_sent`; `seq` a whole number ≥ 0, unique within the session; `data` an object of at most
+8 KB as JSON. One bad event refuses the whole batch. Resending a batch is safe: events whose
+`(session_id, seq)` is already stored are skipped and counted in `duplicates`.
+
+**`submit-crash`** (body ≤ 384 KB) → `200 { "ok": true, "id": "CR-7KQ3XM", "posted": true|false }`
+
+```json
+{ "install_id": "uuid-v4", "session_id": "uuid of the crashed session", "version": "0.8.0",
+  "kind": "crash", "message": "…", "stack": "…", "log_tail": "…", "occurred_at": "2026-10-08T12:00:00Z",
+  "context": { "os": "…", "gpu": "…", "window": "1920x1080", "scene": "…",
+               "coven": "…", "night": 2, "hours": 3, "quarry": "…" } }
+```
+
+`kind` is `crash` or `error`; `message` 1–2000 characters; `stack` ≤ 8000 (may be empty);
+`log_tail` ≤ 64 KB; `os`, `gpu`, `window`, `scene` required (may be empty strings), the rest
+optional. The **signature** is the SHA-256 of version, kind, the message with digits removed and
+the first stack line. Only the first report of a signature is posted (`posted: true`); if that post
+fails, a later report retries it (at most every 15 minutes). Without the webhook secret, crashes
+are only stored.
+
+**`submit-feedback`** (body ≤ 5 MB) → `200 { "ok": true, "id": "BR-7KQ3XM" }` when the
+`#bug-reports` post was created, otherwise `502 { "ok": false, "error": "discord_failed", "id": … }`
+(the report is still stored; tell the player it was saved but not delivered).
+
+```json
+{ "install_id": "uuid-v4", "version": "0.8.0", "kind": "Bug", "title": "…", "details": "…",
+  "context": { "version": "0.8.0", "scene": "…", "os": "…", "gpu": "…", "window": "…",
+               "time_utc": "2026-10-08T12:00:00Z", "coven": "…", "implements": ["…", "…"],
+               "night": 2, "hours": 3, "vitality": 18, "quarry": "…" },
+  "screenshot_jpg": "base64 JPEG, optional", "log": "optional" }
+```
+
+`kind` is `Bug`, `Crash`, `Balance`, `UI` or `Other`; `title` 1–90 characters (it becomes the
+forum post's title); `details` ≤ 4000; the six context keys up to `time_utc` are required;
+`screenshot_jpg` is plain base64 (no `data:` prefix) of a real JPEG of at most 3 MB; `log` ≤ 64 KB.
+Unknown context keys are dropped.
+
+**Rate limits** (fixed windows; 429 past them):
+
+| Endpoint | Per install | Per IP (salted hash) |
+| --- | --- | --- |
+| `ingest-telemetry` | 60 requests / 10 min | 300 / 10 min |
+| `submit-crash` | 20 / hour | 60 / hour |
+| `submit-feedback` | 10 / hour | 30 / hour |
+
+**Privacy.** No IP address is stored or logged: per-IP limits use a salted SHA-256 that is
+forgotten after two days. The install id is random and not linked to a person. Screenshots and
+game logs go to the `#bug-reports` post only (logs can contain Windows user names in file paths;
+`#bug-reports` is private to testers and staff); crash reports keep their log tail in
+`crash_reports.log_tail`.
+
+### Reading the data
+
+Dashboard → **SQL Editor**. The views are not reachable with the public keys.
+
+```sql
+-- Which quarries are too hard? (Hunt-mode fights only)
+select * from quarry_balance order by quarry, night;
+
+-- Cards nobody picks, and cards that win
+select * from card_stats where offered >= 20 order by pick_rate;
+select * from card_stats where fights_played_in >= 20 order by win_rate_when_played desc;
+
+-- Coven + implement pairs (hunt_start joined to hunt_end by session_id + hunt_id)
+select * from implement_pairs where hunts >= 5 order by win_rate desc;
+
+-- What kills hunters, and when
+select * from death_causes order by deaths desc;
+
+-- Crashes, most common first
+select * from crash_summary order by reports desc;
+
+-- F8 reports that never reached Discord
+select report_id, kind, title, received_at from feedback_reports where not discord_ok order by received_at desc;
+
+-- Everything one install sent (the 8-character prefix is in each post's footer)
+select * from telemetry_events where install_id::text like '3f2b8c1e%' order by occurred_at;
+```
+
+The views cover every version; to look at one build, query `telemetry_events` with
+`where version = '0.8.0'`, or copy a view's definition and add that filter. `card_stats` counts
+plays and wins from Hunt-mode fights only (lab fights are left out), like `quarry_balance`.
+
 ---
 
 ## Anti-spam, and adding a CAPTCHA later
@@ -647,7 +845,7 @@ Another provider: implement `CaptchaVerifier` in `supabase/functions/_shared/cap
 npm run verify        # agreement check, type-checks, unit tests, build, secret scan
 npm test              # unit tests only
 npm run discord -- --matrix   # who can see and post in each Discord channel
-npm run function:check        # type-check the Edge Function (needs Deno: https://deno.com)
+npm run function:check        # type-check the Edge Functions (needs Deno: https://deno.com)
 npm run test:e2e              # real database test (needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY set,
                               # e.g. from `npx supabase status` with local Supabase running)
 ```
@@ -655,9 +853,11 @@ npm run test:e2e              # real database test (needs SUPABASE_URL and SUPAB
 The unit tests cover form validation, the Discord embed (mention safety, size limits), the
 function handler (CORS, methods, honeypot, duplicate, agreement fields set by the server,
 Discord failure still saving) and the Discord layout (who can see what, a dry run that changes
-nothing twice, never touching unknown channels). `supabase/tests/security_checks.sql` checks the
-database (no public access, frozen agreement evidence, status rules); the checks workflow runs
-it on a fresh Postgres for every pull request.
+nothing twice, never touching unknown channels), and the game endpoints (validation, rate limits,
+crash signatures, mention safety, the multipart forum post, Discord failures).
+`supabase/tests/security_checks.sql` checks the database (no public access, frozen agreement
+evidence, status rules, the game tables, rate limits and views); the checks workflow runs it on a
+fresh Postgres for every pull request. `npm run test:e2e` also runs `supabase/tests/game-e2e.test.ts`.
 
 ## Extending it later
 
