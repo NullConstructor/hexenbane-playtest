@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { marked } from "marked";
 import { defineConfig, loadEnv, type Plugin } from "vite";
@@ -20,11 +21,23 @@ function agreementHtml(): string {
   return marked.parse(body, { async: false, gfm: true }).replace(/<(\/?)h2>/g, "<$1h3>");
 }
 
+/** The privacy policy (legal/privacy-policy-v1.md) → its version and HTML for its dialog. */
+function privacyPolicy(): { version: string; html: string } {
+  const text = readFileSync(fileURLToPath(new URL("../legal/privacy-policy-v1.md", import.meta.url)), "utf8")
+    .replace(/\r\n/g, "\n");
+  const version = /^version:\s*(\S+)/m.exec(text)?.[1] ?? "";
+  const body = text.replace(/^---\n[\s\S]*?\n---\n+/, "").replace(/^# .*\n+/, "");
+  return { version, html: marked.parse(body, { async: false, gfm: true }).replace(/<(\/?)h2>/g, "<$1h3>") };
+}
+
 function hexenbaneContent(base: string, env: Record<string, string>): Plugin {
   return {
     name: "hexenbane-content",
     transformIndexHtml(html) {
       const tokens = renderTokens(base, env.VITE_DISCORD_INVITE_URL ?? "", agreementHtml(), AGREEMENT_VERSION);
+      const privacy = privacyPolicy();
+      tokens.PRIVACY_HTML = privacy.html;
+      tokens.PRIVACY_VERSION = privacy.version;
       // Link previews (Discord, social sites) need an absolute image URL.
       if (env.SITE_URL) tokens.SOCIAL_IMAGE = new URL(site.socialImage, env.SITE_URL.replace(/\/?$/, "/")).href;
       const out = html.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
