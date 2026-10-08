@@ -423,3 +423,24 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/submit-playtest-application/deno.json"
 entrypoint = "./functions/submit-playtest-application/index.ts"
+
+# The game's endpoints (telemetry, crash reports, the F8 report form). The game is a desktop
+# program without a signed-in user, so JWT verification is off; each function validates every
+# request, rate-limits per install and per hashed IP, and only it holds database access.
+[functions.ingest-telemetry]
+enabled = true
+verify_jwt = false
+import_map = "./functions/ingest-telemetry/deno.json"
+entrypoint = "./functions/ingest-telemetry/index.ts"
+
+[functions.submit-crash]
+enabled = true
+verify_jwt = false
+import_map = "./functions/submit-crash/deno.json"
+entrypoint = "./functions/submit-crash/index.ts"
+
+[functions.submit-feedback]
+enabled = true
+verify_jwt = false
+import_map = "./functions/submit-feedback/deno.json"
+entrypoint = "./functions/submit-feedback/index.ts"

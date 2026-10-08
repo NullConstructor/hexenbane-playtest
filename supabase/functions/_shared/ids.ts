@@ -21,3 +21,13 @@ export function generatePublicApplicationId(
   }
   return `HEX-PT-${id}`;
 }
+
+/** Short report IDs for the game's reports: BR-7KQ3XM (bug/feedback), CR-7KQ3XM (crash). */
+export const REPORT_ID_PATTERN = /^(BR|CR)-[2346789ABCDEFGHJKMNPQRTWXYZ]{6}$/;
+
+export function generateReportId(
+  prefix: "BR" | "CR",
+  randomBytes?: (count: number) => Uint8Array,
+): string {
+  return generatePublicApplicationId(randomBytes).replace(/^HEX-PT-/, `${prefix}-`);
+}
