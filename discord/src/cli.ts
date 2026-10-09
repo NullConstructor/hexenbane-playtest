@@ -102,7 +102,8 @@ if (args.has("--forum-tags")) {
   try {
     await reader.login(token);
     await new Promise<void>((resolve) => (reader.isReady() ? resolve() : reader.once(Events.ClientReady, () => resolve())));
-    const guild = await reader.guilds.fetch(guildId);
+    const guild = await reader.guilds.fetch(guildId).catch(() => null);
+    if (!guild) throw new Error(`The bot is not in a server with ID ${guildId}. Invite it again (npm run discord -- --invite-url), or check DISCORD_GUILD_ID in discord/.env.`);
     const forum = [...(await guild.channels.fetch()).values()].find(
       (ch) => ch?.type === ChannelType.GuildForum && ch.name === "bug-reports",
     ) as ForumChannel | undefined;
