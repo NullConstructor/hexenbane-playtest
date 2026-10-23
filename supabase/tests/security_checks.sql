@@ -202,7 +202,7 @@ begin
     foreach t in array array['telemetry_events', 'crash_reports', 'crash_signatures', 'feedback_reports',
                              'game_rate_limits', 'quarry_balance', 'card_stats', 'implement_pairs',
                              'death_causes', 'crash_summary', 'card_deck_stats', 'relic_stats',
-                             'gun_stats', 'enemy_rules'] loop
+                             'gun_stats', 'enemy_rules', 'fair_telemetry_events'] loop
       foreach op in array array['select', 'insert', 'update', 'delete'] loop
         if has_table_privilege(r, 'public.' || t, op) then
           raise exception 'FAIL: % has % on %', r, op, t;
@@ -211,7 +211,9 @@ begin
     end loop;
     foreach t in array array['public.crash_signature_seen(text, text, boolean)',
                              'public.game_rate_limit_hit(text, text, integer, integer)',
-                             'public.telemetry_num(jsonb, text)'] loop
+                             'public.telemetry_num(jsonb, text)',
+                             'public.telemetry_cheats_on_insert()',
+                             'public.telemetry_cheats_spread()'] loop
       if has_function_privilege(r, t, 'execute') then
         raise exception 'FAIL: % can execute %', r, t;
       end if;
@@ -238,7 +240,8 @@ begin
     end if;
   end loop;
   foreach t in array array['quarry_balance', 'card_stats', 'implement_pairs', 'death_causes', 'crash_summary',
-                           'card_deck_stats', 'relic_stats', 'gun_stats', 'enemy_rules'] loop
+                           'card_deck_stats', 'relic_stats', 'gun_stats', 'enemy_rules',
+                           'fair_telemetry_events'] loop
     if not coalesce((select 'security_invoker=true' = any (reloptions) from pg_class where oid = ('public.' || t)::regclass), false) then
       raise exception 'FAIL: view % is not security_invoker', t;
     end if;
@@ -339,6 +342,38 @@ begin
     raise exception 'FAIL: death_causes gave %', row_to_json(rec);
   end if;
   raise notice 'ok: quarry_balance, card_stats, implement_pairs and death_causes';
+end $$;
+
+-- A debug-menu run counts nowhere: a cheat mid-Hunt marks the Hunt's events sent before it and
+-- after it, and the views leave them all out.
+insert into public.telemetry_events (install_id, session_id, version, name, seq, occurred_at, data) values
+  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '0.39.0', 'fight_end', 7, now(),
+   '{"hunt_id":"chk-h2","quarry":"chk-quarry","night":1,"result":"win","beats":4,"vitality_start":30,"vitality_end":30,"mode":"hunt"}');
+insert into public.telemetry_events (install_id, session_id, version, name, seq, occurred_at, data) values
+  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '0.39.0', 'fight_end', 8, now(),
+   '{"hunt_id":"chk-h2","cheats":true,"quarry":"chk-quarry","night":1,"result":"win","beats":2,"vitality_start":30,"vitality_end":30,"mode":"hunt"}');
+insert into public.telemetry_events (install_id, session_id, version, name, seq, occurred_at, data) values
+  ('11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333333', '0.39.0', 'hunt_end', 0, now(),
+   '{"hunt_id":"chk-h2","result":"lost","night":2,"killed_by":"chk-quarry"}');
+do $$
+declare
+  rec record;
+begin
+  if exists (select from public.telemetry_events where data ->> 'hunt_id' = 'chk-h2' and not cheats) then
+    raise exception 'FAIL: an event of a cheated Hunt was not marked';
+  end if;
+  if exists (select from public.telemetry_events where data ->> 'hunt_id' = 'chk-h1' and cheats) then
+    raise exception 'FAIL: a fair Hunt was marked';
+  end if;
+  select * into rec from public.quarry_balance where quarry = 'chk-quarry' and night = 1;
+  if rec.fights <> 2 or rec.wins <> 1 then
+    raise exception 'FAIL: quarry_balance counted a cheated fight: %', row_to_json(rec);
+  end if;
+  select * into rec from public.death_causes where killed_by = 'chk-quarry';
+  if rec.deaths <> 1 or rec.night <> 3 then
+    raise exception 'FAIL: death_causes counted a cheated Hunt: %', row_to_json(rec);
+  end if;
+  raise notice 'ok: a cheated Hunt is marked whole and left out of the views';
 end $$;
 
 -- Crash signatures: counted every time, claimed for Discord once.

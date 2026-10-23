@@ -823,7 +823,19 @@ select report_id, kind, title, received_at from feedback_reports where not disco
 
 -- Everything one install sent (the 8-character prefix is in each post's footer)
 select * from telemetry_events where install_id::text like '3f2b8c1e%' order by occurred_at;
+
+-- Runs played with the F1 debug menu (left out of every view above)
+select data ->> 'hunt_id' as hunt_id, install_id, version, count(*) as events, min(occurred_at) as first_event
+from telemetry_events where cheats group by 1, 2, 3 order by first_event desc;
 ```
+
+**Debug-menu runs** (migration 20261023120000_cheat_runs). Once a tester uses anything in the
+game's F1 debug menu, the game marks the events it sends (`"cheats": true`), and from game 0.39.0
+the mark covers the whole Hunt, before and after the cheat, even across a restart. The database
+copies the mark to `telemetry_events.cheats` and spreads it to every event of that Hunt
+(`data.hunt_id`), including ones that arrived first. Every view reads `fair_telemetry_events`
+(the events without the mark), so cheated runs never reach the balance numbers; for your own
+queries, read `fair_telemetry_events` instead of `telemetry_events` for the same effect.
 
 The views cover every version; to look at one build, query `telemetry_events` with
 `where version = '0.8.0'`, or copy a view's definition and add that filter. `card_stats` counts
