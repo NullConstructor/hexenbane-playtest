@@ -30,7 +30,8 @@ export const TELEMETRY_EVENT_NAMES = [
   "boss_reward",
   "purchase",
   "inscription_cut",
-  "scene_lead",
+  "scene_lead", // builds before 0.15.0
+  "scene_puzzle",
   "hunt_end",
   "feedback_sent",
 ] as const;

@@ -75,6 +75,14 @@ describe("validateTelemetry", () => {
     }
   });
 
+  it("accepts every event the game sends, the Scene puzzle included", () => {
+    // The game (0.15.0 on) sends scene_puzzle; refusing it dropped whole batches with it.
+    const names = ["session_start", "session_end", "hunt_start", "fight_end", "card_offer", "boss_reward",
+      "purchase", "inscription_cut", "scene_lead", "scene_puzzle", "hunt_end", "feedback_sent"];
+    const events = names.map((name, seq) => ({ name, seq, at: "2026-10-08T12:00:00Z", data: {} }));
+    expect(validateTelemetry(telemetryBody({ events })).ok).toBe(true);
+  });
+
   it("limits a batch to 1..200 events and each event's data to 8 KB", () => {
     const event = (seq: number) => ({ name: "purchase", seq, at: "2026-10-08T12:00:00Z", data: {} });
     expect(validateTelemetry(telemetryBody({ events: [] })).ok).toBe(false);

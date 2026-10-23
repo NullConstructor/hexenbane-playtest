@@ -201,7 +201,8 @@ begin
   foreach r in array array['anon', 'authenticated'] loop
     foreach t in array array['telemetry_events', 'crash_reports', 'crash_signatures', 'feedback_reports',
                              'game_rate_limits', 'quarry_balance', 'card_stats', 'implement_pairs',
-                             'death_causes', 'crash_summary'] loop
+                             'death_causes', 'crash_summary', 'card_deck_stats', 'relic_stats',
+                             'gun_stats', 'enemy_rules'] loop
       foreach op in array array['select', 'insert', 'update', 'delete'] loop
         if has_table_privilege(r, 'public.' || t, op) then
           raise exception 'FAIL: % has % on %', r, op, t;
@@ -236,7 +237,8 @@ begin
       raise exception 'FAIL: a policy exists on %; review it before going live', t;
     end if;
   end loop;
-  foreach t in array array['quarry_balance', 'card_stats', 'implement_pairs', 'death_causes', 'crash_summary'] loop
+  foreach t in array array['quarry_balance', 'card_stats', 'implement_pairs', 'death_causes', 'crash_summary',
+                           'card_deck_stats', 'relic_stats', 'gun_stats', 'enemy_rules'] loop
     if not coalesce((select 'security_invoker=true' = any (reloptions) from pg_class where oid = ('public.' || t)::regclass), false) then
       raise exception 'FAIL: view % is not security_invoker', t;
     end if;
