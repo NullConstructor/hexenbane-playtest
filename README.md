@@ -734,8 +734,8 @@ The body's `version` is stored; it may differ from the header (a batch queued by
 ```
 
 1 to 200 events. `name` is one of `session_start`, `session_end`, `hunt_start`, `fight_end`,
-`card_offer`, `boss_reward`, `purchase`, `inscription_cut`, `scene_lead`, `hunt_end`,
-`feedback_sent`; `seq` a whole number ≥ 0, unique within the session; `data` an object of at most
+`card_offer`, `boss_reward`, `purchase`, `inscription_cut`, `scene_puzzle`, `scene_lead` (builds
+before 0.15.0), `hunt_end`, `feedback_sent`; `seq` a whole number ≥ 0, unique within the session; `data` an object of at most
 8 KB as JSON. One bad event refuses the whole batch. Resending a batch is safe: events whose
 `(session_id, seq)` is already stored are skipped and counted in `duplicates`.
 
@@ -797,6 +797,17 @@ select * from quarry_balance order by quarry, night;
 -- Cards nobody picks, and cards that win
 select * from card_stats where offered >= 20 order by pick_rate;
 select * from card_stats where fights_played_in >= 20 order by win_rate_when_played desc;
+
+-- Tuning (game 0.38.0 on; migration 20261023000000_tuning_telemetry). Each view has a version
+-- column: add "where version = '0.38.0'" to read one build.
+-- Per card and tier: win rate when it is in the deck, and when it is played
+select * from card_deck_stats where fights_in_deck >= 20 order by win_rate_in_deck desc;
+-- Relics: fights and Hunts carried in
+select * from relic_stats where fights >= 20 order by fight_win_rate desc;
+-- Gun, Reforging and grade (-1 = never reforged)
+select * from gun_stats where fights >= 20 order by gun, reforge, grade;
+-- Rend, Disarm and the triangle traits, per quarry and Night
+select * from enemy_rules order by quarry, night;
 
 -- Coven + implement pairs (hunt_start joined to hunt_end by session_id + hunt_id)
 select * from implement_pairs where hunts >= 5 order by win_rate desc;
